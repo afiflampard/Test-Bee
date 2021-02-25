@@ -87,10 +87,9 @@ func (controller *ActivityImpl) PinjamBuku(c *gin.Context) {
 			GetDB().Save(&buku)
 			tx.Commit()
 			history := models.History{
-				IDBuku:   buku.ID,
-				IDOrder:  pinjam.ID,
-				NoState:  pinjam.NoState,
-				MemberId: pinjam.IDUser,
+				IDBuku:  buku.ID,
+				IDOrder: pinjam.ID,
+				NoState: pinjam.NoState,
 			}
 			err = GetDB().Debug().Create(&history).Error
 			if err != nil {
@@ -152,10 +151,9 @@ func (controller *ActivityImpl) KembaliBuku(c *gin.Context) {
 			GetDB().Save(&order)
 			GetDB().Save(&buku)
 			history := models.History{
-				IDBuku:   buku.ID,
-				IDOrder:  orderDetail.Order.ID,
-				NoState:  orderDetail.Order.NoState,
-				MemberId: member.ID,
+				IDBuku:  buku.ID,
+				IDOrder: orderDetail.Order.ID,
+				NoState: orderDetail.Order.NoState,
 			}
 			err := GetDB().Debug().Create(&history).Error
 			if err != nil {
@@ -180,7 +178,7 @@ func (controller *ActivityImpl) HistoryPinjam(c *gin.Context) {
 		Error(c, 404, "Petugas Not Found")
 	}
 	if strings.ToLower(petugas.Role.Role) == "petugas" {
-		if err := GetDB().Preload("Order").Preload("OrderState").Preload("User").Preload("Buku").Find(&histories).Error; err != nil {
+		if err := GetDB().Preload("Order.User.Role").Preload("Order.Petugas.Role").Preload("OrderState").Preload("Buku").Find(&histories).Error; err != nil {
 			Error(c, 404, "History Not Found")
 		} else {
 			for _, history := range histories {
@@ -201,7 +199,7 @@ func (controller *ActivityImpl) HistoryKembali(c *gin.Context) {
 		Error(c, 404, "Petugas Not Found")
 	}
 	if strings.ToLower(petugas.Role.Role) == "petugas" {
-		if err := GetDB().Joins("Order").Joins("OrderState").Joins("User").Joins("Buku").Find(&histories).Error; err != nil {
+		if err := GetDB().Preload("Order.User.Role").Preload("Order.Petugas.Role").Preload("OrderState").Preload("Buku").Find(&histories).Error; err != nil {
 			Error(c, 404, "History Not Found")
 		} else {
 			for _, history := range histories {

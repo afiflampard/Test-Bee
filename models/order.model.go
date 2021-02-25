@@ -43,6 +43,4 @@ type History struct {
 	Buku       Buku       `gorm:"foreignKey:IDBuku"`
 	NoState    uint       `gorm:"column:stateNo" json:"no_state"`
 	OrderState OrderState `gorm:"foreignKey:NoState"`
-	MemberId   uint       `gorm:"column:memberId" json:"member_id"`
-	User       User       `gorm:"foreignKey:MemberId"`
 }
