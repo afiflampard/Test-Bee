@@ -8,6 +8,8 @@ Installation with "make install" in cmd
 <br>
 Run API with "make dev" in cmd
 <br>
+Using JWT Auth for Middleware
+<br>
 <li>POST /v1/login (for Login User)
 <li>POST /v1/signup (for Sign up)
 <li>GET /v1/user/:id (for User find By Id)
