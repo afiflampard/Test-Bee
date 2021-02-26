@@ -80,10 +80,58 @@ func (controller *ActivityImpl) PinjamBuku(c *gin.Context) {
 		} else {
 			tx.Commit()
 			if len(buku) > 1 {
-				for index := 0; index < len(buku); index++ {
+				var tempBuku []models.Buku
+				for i := 0; i < len(buku); i++ {
+					if buku[i].Stok > 0 {
+						tempBuku = append(tempBuku, buku[i])
+					}
+				}
+				if tempBuku == nil {
+					c.JSON(404, &SuccessPinjam{
+						Kode:    404,
+						Message: "Stok Buku Kosong",
+					})
+				} else {
+					for index := 0; index < len(tempBuku); index++ {
+						orderDetail := models.OrderDetail{
+							IDOrder: pinjam.ID,
+							IDBuku:  tempBuku[index].ID,
+						}
+						err := GetDB().Debug().Create(&orderDetail).Error
+						if err != nil {
+							c.JSON(401, &ErrorResponse{
+								Error: err,
+							})
+							tx.Rollback()
+						}
+						tempBuku[index].Stok = tempBuku[index].Stok - 1
+						GetDB().Save(&tempBuku)
+						tx.Commit()
+						history := models.History{
+							IDBuku:  tempBuku[index].ID,
+							IDOrder: pinjam.ID,
+							NoState: pinjam.NoState,
+						}
+						err = GetDB().Debug().Create(&history).Error
+						if err != nil {
+							c.JSON(401, &ErrorResponse{
+								Error: err,
+							})
+							tx.Rollback()
+						}
+						tx.Commit()
+					}
+					c.JSON(200, &SuccessPinjam{
+						Kode:    200,
+						Message: "Buku Telah Dipinjam",
+					})
+				}
+
+			} else {
+				if buku[0].Stok > 0 {
 					orderDetail := models.OrderDetail{
 						IDOrder: pinjam.ID,
-						IDBuku:  buku[index].ID,
+						IDBuku:  buku[0].ID,
 					}
 					err := GetDB().Debug().Create(&orderDetail).Error
 					if err != nil {
@@ -92,11 +140,11 @@ func (controller *ActivityImpl) PinjamBuku(c *gin.Context) {
 						})
 						tx.Rollback()
 					}
-					buku[index].Stok = buku[index].Stok - 1
-					GetDB().Save(&buku)
 					tx.Commit()
+					buku[0].Stok = buku[0].Stok - 1
+					GetDB().Save(&buku)
 					history := models.History{
-						IDBuku:  buku[index].ID,
+						IDBuku:  buku[0].ID,
 						IDOrder: pinjam.ID,
 						NoState: pinjam.NoState,
 					}
@@ -108,41 +156,18 @@ func (controller *ActivityImpl) PinjamBuku(c *gin.Context) {
 						tx.Rollback()
 					}
 					tx.Commit()
+					c.JSON(200, &SuccessPinjam{
+						Kode:    200,
+						Message: "Buku Telah Dipinjam",
+					})
+				} else {
+					c.JSON(404, &SuccessPinjam{
+						Kode:    404,
+						Message: "Buku sudah Penuh",
+					})
 				}
 
-			} else {
-				orderDetail := models.OrderDetail{
-					IDOrder: pinjam.ID,
-					IDBuku:  buku[0].ID,
-				}
-				err := GetDB().Debug().Create(&orderDetail).Error
-				if err != nil {
-					c.JSON(401, &ErrorResponse{
-						Error: err,
-					})
-					tx.Rollback()
-				}
-				tx.Commit()
-				buku[0].Stok = buku[0].Stok - 1
-				GetDB().Save(&buku)
-				history := models.History{
-					IDBuku:  buku[0].ID,
-					IDOrder: pinjam.ID,
-					NoState: pinjam.NoState,
-				}
-				err = GetDB().Debug().Create(&history).Error
-				if err != nil {
-					c.JSON(401, &ErrorResponse{
-						Error: err,
-					})
-					tx.Rollback()
-				}
-				tx.Commit()
 			}
-			c.JSON(200, &SuccessPinjam{
-				Kode:    200,
-				Message: "Buku Telah Dipinjam",
-			})
 
 		}
 	}
